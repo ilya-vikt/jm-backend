@@ -32,12 +32,12 @@ export class MediaLibraryService {
   /**
    *
    * @param {string[]} id array containing the identifiers of the searched media files
-   * @returns {Promise<MediaFile[] | null>} the data of media files is returned in the
+   * @returns {Promise<MediaFile[]>} the data of media files is returned in the
    * form of an array or null if there are no media files with such ids registered
    *
    * The method receives data about media files from the media library using arrays of identifiers.
    */
-  async getGallery(ids: string[]): Promise<MediaFile[] | null> {
+  async getGallery(ids: string[]): Promise<MediaFile[]> {
     return await this.prismaService.mediaLibrary.findMany({
       select: {
         id: true,
