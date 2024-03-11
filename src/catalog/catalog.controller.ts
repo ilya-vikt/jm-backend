@@ -1,7 +1,16 @@
 import { CategoryService } from './categories.service';
 import { FilterService } from './filters.service';
 import { ProductService } from './products.service';
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
+import { SearchProductsInput } from './types/products/search-products.input';
 
 @Controller('catalog')
 export class CatalogController {
@@ -24,5 +33,13 @@ export class CatalogController {
   @Get('getproductbyid/:id')
   async getProductById(@Param('id', ParseIntPipe) id: number) {
     return this.productService.getProductById(id);
+  }
+
+  @Post('searchproducts')
+  async serachProducts(
+    @Body(new ValidationPipe())
+    searchParams: SearchProductsInput,
+  ) {
+    return this.productService.serachProducts(searchParams);
   }
 }

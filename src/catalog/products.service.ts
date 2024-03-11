@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductByIdOutput } from 'src/catalog/types/products/product-by-id.output';
 import { MediaLibraryService } from 'src/media-library/madia-library.service';
+import { SearchProductsInput } from './types/products/search-products.input';
+import { createSearchQuery } from './queries/search-query';
+import { SearchProductsOutput } from './types/products/search-products.output';
 
 @Injectable()
 export class ProductService {
@@ -17,7 +25,6 @@ export class ProductService {
    *
    * Gets information about a product with a given id
    */
-
   async getProductById(id: number): Promise<ProductByIdOutput> {
     const product = await this.prismaService.products.findUnique({
       select: {
@@ -117,5 +124,132 @@ export class ProductService {
       gallery,
       features,
     };
+  }
+
+  /**
+   *
+   * @param {SearchProductsInput['appliedFilters']} filters values ​​of installed filters
+   * @returns {string} temporary table name
+   * Creates a temporary table and fills it with the values ​​of the installed filters.
+   * This table allows you to filter products using specified filters
+   */
+  private async createTempTable(
+    filters: SearchProductsInput['appliedFilters'],
+  ): Promise<string> {
+    const tableName = 'temp_' + crypto.randomUUID().replaceAll('-', '');
+    const filtersString = filters
+      .map(({ id, value }) => `(${id}, '${value}')`)
+      .join(',');
+
+    try {
+      await this.prismaService.$executeRawUnsafe(
+        `CREATE TEMPORARY TABLE ${tableName} (filter_id INT, value VARCHAR(255));`,
+      );
+
+      await this.prismaService.$executeRawUnsafe(
+        `INSERT INTO ${tableName} (filter_id, value) VALUES ${filtersString};`,
+      );
+    } catch {
+      throw new InternalServerErrorException();
+    }
+    return tableName;
+  }
+
+  /**
+   *
+   * @param {string} tableName table name
+   * Destroys a temporary table
+   */
+  private async removeTempTable(tableName: string) {
+    try {
+      await this.prismaService.$executeRawUnsafe(
+        ` DROP TABLE IF EXISTS ${tableName};`,
+      );
+    } catch {
+      throw new InternalServerErrorException();
+    }
+  }
+
+  /**
+   *
+   * @param {number | null}categoryId category id
+   * @returns {Promise<number[] | null>}
+   * An auxiliary function that generates an array of category ids.
+   * If categoryId is the root category, then an array of category ids
+   * for which categoryId is the parent is returned
+   * If categoryId is a second-level category, then an array of one element equal to categoryId is returned
+   */
+  private async getCategoriesIds(
+    categoryId: number | null,
+  ): Promise<number[] | null> {
+    if (categoryId === null) return null;
+    const categories = await this.prismaService.categories.findMany({
+      select: {
+        id: true,
+        parentId: true,
+      },
+      where: {
+        OR: [
+          {
+            id: categoryId,
+          },
+          {
+            parentId: categoryId,
+          },
+        ],
+      },
+    });
+    if (categories.length === 0) {
+      throw new BadRequestException('The categoryId is wrong');
+    }
+
+    return categories.some((cat) => cat.parentId === 0)
+      ? categories.filter((cat) => cat.parentId !== 0).map(({ id }) => id)
+      : [categoryId];
+  }
+
+  /**
+   *
+   * @param {SearchProductsInput} searchParams search parameters
+   * @returns {Promise<SearchProductsOutput[]>} array of products that match the search conditions
+   * The function searches for products that meet the search conditions
+   */
+  async serachProducts(
+    searchParams: SearchProductsInput,
+  ): Promise<SearchProductsOutput[]> {
+    const tempTableName = searchParams.appliedFilters
+      ? await this.createTempTable(searchParams.appliedFilters)
+      : null;
+    const categories = await this.getCategoriesIds(searchParams.categoryId);
+    const queryString = createSearchQuery(
+      searchParams.searchString,
+      categories,
+      !!searchParams.appliedFilters,
+      tempTableName,
+    );
+
+    const products: (Omit<SearchProductsOutput, 'thumb' | 'gallery'> & {
+      gallery: string[];
+      thumb_id: string;
+    })[] = await this.prismaService.$queryRawUnsafe(queryString);
+
+    if (searchParams.appliedFilters) {
+      this.removeTempTable(tempTableName);
+    }
+
+    if (products.length === 0) {
+      return [];
+    }
+
+    return Promise.all(
+      products.map(async (product) => {
+        const { thumb_id, gallery, ...rest } = product;
+        return {
+          ...rest,
+          thumb: await this.mediaLibraryService.getMediaFile(thumb_id),
+          gallery: await this.mediaLibraryService.getGallery(gallery),
+        };
+      }),
+    );
   }
 }
