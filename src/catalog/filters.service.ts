@@ -29,11 +29,20 @@ export class FilterService {
         },
       },
       where: {
-        categories: {
-          some: {
-            id: categoryId,
+        AND: [
+          {
+            categories: {
+              some: {
+                id: categoryId,
+              },
+            },
           },
-        },
+          {
+            productsFiltersValues: {
+              some: {},
+            },
+          },
+        ],
       },
     });
 

@@ -1,4 +1,4 @@
-export type FilterType = 'NUMBER' | 'BOOLEAN' | 'LIST' | 'MULTILIST';
+import { FilterType } from './filters';
 
 export type FilterOutput = {
   id: number;
