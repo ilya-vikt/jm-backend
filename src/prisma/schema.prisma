@@ -14,13 +14,28 @@ datasource db {
 }
 
 model MediaLibrary {
-  id          String   @id
-  alt         String   @default("")
+  id          String       @id
+  alt         String       @default("")
   mimetype    String
   width       Int[]
   height      Int[]
   urls        String[]
   description String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @map("updated_at")
+  Categories  Categories[]
+}
+
+model Categories {
+  id        Int           @id @default(autoincrement())
+  parentId  Int           @map("parent_id")
+  priority  Int           @default(autoincrement())
+  name      String
+  image     MediaLibrary? @relation(fields: [imageId], references: [id])
+  slug      String        @default("")
+  imageId   String?       @map("image_id")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @map("updated_at")
+
+  @@index([priority])
 }
