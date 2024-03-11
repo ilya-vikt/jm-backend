@@ -63,7 +63,6 @@ model FiltersValues {
 }
 
 enum FilterType {
-  STRING
   LIST
   MULTILIST
   NUMBER
