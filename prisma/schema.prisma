@@ -12,3 +12,15 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model MediaLibrary {
+  id          String   @id
+  alt         String   @default("")
+  mimetype    String
+  width       Int[]
+  height      Int[]
+  urls        String[]
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+}
