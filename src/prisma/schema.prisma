@@ -36,8 +36,7 @@ model Categories {
   imageId   String?       @map("image_id")
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @default(now()) @map("updated_at")
-  Filters   Filters?      @relation(fields: [filtersId], references: [id])
-  filtersId Int?
+  filters   Filters[]
 
   @@index([priority])
 }
