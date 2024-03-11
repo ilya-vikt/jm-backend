@@ -24,6 +24,7 @@ model MediaLibrary {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @default(now()) @map("updated_at")
   Categories  Categories[]
+  Products    Products[]
 }
 
 model Categories {
@@ -37,20 +38,22 @@ model Categories {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @default(now()) @map("updated_at")
   filters   Filters[]
+  products  Products[]
 
   @@index([priority])
 }
 
 model Filters {
-  id            Int             @id @default(autoincrement())
-  name          String          @unique()
-  caption       String          @default("")
-  type          FilterType
-  categories    Categories[]
-  filtersValues FiltersValues[]
-  meta          Json            @default("{}")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @default(now()) @map("updated_at")
+  id                    Int                     @id @default(autoincrement())
+  name                  String                  @unique()
+  caption               String                  @default("")
+  type                  FilterType
+  categories            Categories[]
+  filtersValues         FiltersValues[]
+  productsFiltersValues ProductsFiltersValues[]
+  meta                  Json                    @default("{}")
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @default(now()) @map("updated_at")
 }
 
 model FiltersValues {
@@ -67,4 +70,30 @@ enum FilterType {
   MULTILIST
   NUMBER
   BOOLEAN
+}
+
+model Products {
+  id                    Int                     @id @default(autoincrement())
+  name                  String
+  category              Categories              @relation(fields: [categoryId], references: [id])
+  categoryId            Int                     @map("category_id")
+  description           String
+  price                 Float
+  marketingPrice        Float?                  @map("marketing_price")
+  thumb                 MediaLibrary            @relation(fields: [thumbId], references: [id])
+  thumbId               String                  @map("thumb_id")
+  productsFiltersValues ProductsFiltersValues[]
+  gallery               String[]
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @default(now()) @map("updated_at")
+}
+
+model ProductsFiltersValues {
+  productId Int      @map("product_id")
+  filterId  Int      @map("filter_id")
+  products  Products @relation(fields: [productId], references: [id])
+  filters   Filters  @relation(fields: [filterId], references: [id])
+  value     String
+
+  @@unique([productId, filterId])
 }
