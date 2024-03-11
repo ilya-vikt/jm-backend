@@ -36,6 +36,37 @@ model Categories {
   imageId   String?       @map("image_id")
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @default(now()) @map("updated_at")
+  Filters   Filters?      @relation(fields: [filtersId], references: [id])
+  filtersId Int?
 
   @@index([priority])
+}
+
+model Filters {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique()
+  caption       String          @default("")
+  type          FilterType
+  categories    Categories[]
+  filtersValues FiltersValues[]
+  meta          Json            @default("{}")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @default(now()) @map("updated_at")
+}
+
+model FiltersValues {
+  id        Int      @id @default(autoincrement())
+  filter    Filters  @relation(fields: [filterId], references: [id])
+  filterId  Int      @map("filter_id")
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+}
+
+enum FilterType {
+  STRING
+  LIST
+  MULTILIST
+  NUMBER
+  BOOLEAN
 }
