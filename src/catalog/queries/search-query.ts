@@ -12,11 +12,11 @@ FROM
       OR
       (f.type = 'NUMBER' AND
         (
-          CAST(pfv.value AS INT)
+          CAST(pfv.value AS FLOAT)
           BETWEEN
-          (string_to_array($tableName.value, ',')::INT[])[1]
+          (string_to_array($tableName.value, ',')::FLOAT[])[1]
           AND
-          (string_to_array($tableName.value, ',')::INT[])[2]
+          (string_to_array($tableName.value, ',')::FLOAT[])[2]
         )
       )
       OR
